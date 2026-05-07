@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>VoxPDF — Lector con Voz</title>
+  <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root,html[data-theme="dark"]{
+      --bg:#0f0e0c;--surf:rgba(22,21,18,.92);--surf-solid:#171613;--card:rgba(28,27,24,.86);
+      --bord:rgba(255,255,255,.08);--bord-strong:rgba(255,255,255,.14);--t1:#f2efe9;--t2:#bbb3a7;--tm:#837d71;
+      --grn:#00b894;--grn-2:#0a8f6c;--amb:#f9a825;--purp:#6d28d9;--purp-a:#8b5cf6;--red:#ff6464;
+      --red-bg:rgba(255,88,88,.14);--focus:0 0 0 3px rgba(0,184,148,.18);--blur:blur(18px);
+      --sh:0 8px 24px rgba(0,0,0,.22);--sh2:0 20px 48px rgba(0,0,0,.32);--glow:0 0 16px rgba(0,184,148,.32);
+      --radius:22px;--radius-sm:14px;--ease:.22s cubic-bezier(.2,.9,.4,1);
+    }
+    html[data-theme="light"]{
+      --bg:#f6f3ee;--surf:rgba(255,252,248,.9);--surf-solid:#fff;--card:rgba(255,255,255,.9);
+      --bord:rgba(0,0,0,.08);--bord-strong:rgba(0,0,0,.14);--t1:#201d18;--t2:#4c463b;--tm:#80796d;
+      --grn:#059669;--grn-2:#047857;--amb:#d88917;--purp:#7e22ce;--purp-a:#9333ea;--red:#dc2626;
+      --red-bg:rgba(220,38,38,.08);--focus:0 0 0 3px rgba(5,150,105,.16);--sh:0 10px 30px rgba(0,0,0,.06);
+      --sh2:0 20px 52px rgba(0,0,0,.10);--glow:0 0 14px rgba(5,150,105,.22);
+    }
+    html,body{min-height:100%}
+    body{
+      font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--t1);
+      line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s;
+    }
+    button,input,select{font:inherit}
+    input[type="file"]{display:none}
+    ::-webkit-scrollbar{width:7px;height:7px}
+    ::-webkit-scrollbar-thumb{background:rgba(0,184,148,.45);border-radius:999px}
+
+    .app{display:grid;grid-template-columns:320px 1fr;min-height:100dvh}
+    .sidebar{
+      position:sticky;top:0;height:100dvh;overflow-y:auto;background:var(--surf);backdrop-filter:var(--blur);
+      border-right:1px solid var(--bord);padding:18px 14px 28px;z-index:30;
+    }
+    .sidebar-inner{display:flex;flex-direction:column;gap:14px}
+    .brand{display:flex;align-items:center;gap:12px;padding:6px 6px 16px;border-bottom:1px solid var(--bord)}
+    .logo{
+      width:48px;height:48px;border-radius:17px;display:grid;place-items:center;color:#fff;
+      background:linear-gradient(135deg,var(--grn),var(--amb));box-shadow:var(--glow);flex-shrink:0
+    }
+    .brand h1{font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
+    .brand p{font-size:.8rem;color:var(--t2)}
+
+    .panel{
+      background:var(--card);border:1px solid var(--bord);border-radius:var(--radius);padding:16px 14px;
+      box-shadow:var(--sh);transition:border-color var(--ease),transform var(--ease)
+    }
+    .panel:hover{border-color:rgba(0,184,148,.28)}
+    .panel-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .panel-step{
+      width:30px;height:30px;border-radius:999px;display:grid;place-items:center;font-size:.8rem;font-weight:800;
+      color:var(--grn);background:rgba(0,184,148,.12);border:1px solid rgba(0,184,148,.32);flex-shrink:0
+    }
+    .panel-title{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--t2)}
+    .panel-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;margin-bottom:10px}
+    .panel-icon.doc{background:rgba(59,130,246,.14);color:#3b82f6}
+    .panel-icon.nav{background:rgba(16,185,129,.14);color:#10b981}
+    .panel-icon.search{background:rgba(249,115,22,.14);color:#f97316}
+    .panel-icon.voice{background:rgba(168,85,247,.14);color:#a855f7}
+    .panel-icon.help{background:rgba(0,184,148,.14);color:var(--grn)}
+
+    .stack{display:flex;flex-direction:column;gap:10px}
+    .row{display:flex;align-items:center;gap:8px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .w-full{width:100%}
+
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:999px;
+      border:1px solid transparent;background:var(--surf-solid);color:var(--t1);cursor:pointer;font-weight:700;
+      font-size:.86rem;transition:transform var(--ease),box-shadow var(--ease),background var(--ease),border-color var(--ease),opacity var(--ease)
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:scale(.97)}
+    .btn:focus-visible,.field:focus-visible,.page-input:focus-visible,.range:focus-visible{outline:none;box-shadow:var(--focus)}
+    .btn[disabled],.field[disabled],.range[disabled],.page-input[disabled]{opacity:.52;cursor:not-allowed}
+    .btn[disabled]:hover{transform:none}
+    .btn-primary{background:linear-gradient(110deg,var(--grn),var(--grn-2));color:#fff;box-shadow:0 6px 18px rgba(0,184,148,.26)}
+    .btn-secondary{background:transparent;border-color:var(--bord);color:var(--t1)}
+    .btn-secondary:hover{border-color:rgba(0,184,148,.4);background:rgba(255,255,255,.03)}
+    .btn-accent{background:var(--purp);color:#fff;box-shadow:0 6px 18px rgba(109,40,217,.22)}
+    .btn-danger{background:var(--red-bg);border-color:rgba(255,100,100,.38);color:var(--red)}
+    .btn-ghost{background:transparent;border:none;color:var(--tm)}
+    .btn-sm{padding:8px 11px;font-size:.8rem}
+    .btn-lg{padding:13px 16px;font-size:.92rem;font-weight:800}
+    .btn.paused{background:rgba(139,92,246,.14);border-color:rgba(139,92,246,.35);color:var(--purp-a);box-shadow:none}
+    .file-label{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%}
+
+    .field,.page-input,.select{
+      width:100%;border-radius:14px;border:1px solid var(--bord);padding:11px 12px;background:rgba(0,0,0,.16);color:var(--t1);transition:border-color var(--ease),box-shadow var(--ease),background var(--ease)
+    }
+    html[data-theme="light"] .field,html[data-theme="light"] .page-input,html[data-theme="light"] .select{background:rgba(0,0,0,.03)}
+    .field::placeholder{color:var(--tm)}
+    .label{font-size:.78rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--tm)}
+    .hint,.status{font-size:.84rem;color:var(--t2);line-height:1.55}
+    .status.ok{color:var(--grn);font-weight:700}
+    .status.warn{color:var(--amb);font-weight:700}
+    .status.stop{color:var(--red);font-weight:700}
+    .status.pause{color:var(--purp-a);font-weight:700}
+
+    .page-bar{
+      display:grid;grid-template-columns:auto 70px 1fr auto auto;gap:8px;align-items:center;
+      padding:12px;border-radius:18px;background:rgba(0,184,148,.06);border:1px solid rgba(0,184,148,.24)
+    }
+    .page-count{font-size:.8rem;color:var(--tm);white-space:nowrap}
+    .page-input{text-align:center;font-weight:800;padding-inline:8px}
+
+    .range-wrap{display:flex;align-items:center;gap:10px}
+    .range{flex:1;accent-color:var(--grn)}
+    .range-val{min-width:42px;text-align:right;font-size:.82rem;font-weight:800;color:var(--grn)}
+
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:16px;border:1px solid var(--bord);background:rgba(0,184,148,.06)}
+    .toggle-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .toggle-copy strong{font-size:.86rem}
+    .toggle-copy span{font-size:.78rem;color:var(--tm)}
+    .switch{position:relative;display:inline-block;width:56px;height:32px;flex-shrink:0}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;inset:0;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid var(--bord-strong);transition:.2s;border-radius:999px}
+    html[data-theme="light"] .slider{background:rgba(0,0,0,.08)}
+    .slider::before{content:'';position:absolute;height:24px;width:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 3px 8px rgba(0,0,0,.2)}
+    .switch input:checked + .slider{background:linear-gradient(110deg,var(--grn),var(--grn-2));border-color:transparent;box-shadow:0 0 0 3px rgba(0,184,148,.12)}
+    .switch input:checked + .slider::before{transform:translateX(24px)}
+    .switch input:focus-visible + .slider{box-shadow:var(--focus)}
+
+    .progress{display:none;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    html[data-theme="light"] .progress{background:rgba(0,0,0,.08)}
+    .progress.on{display:block}
+    .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--grn),var(--amb));transition:width .22s}
+
+    .viewer-wrap{display:flex;flex-direction:column;min-width:0}
+    .toolbar{
+      position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+      padding:12px 20px;background:var(--surf);backdrop-filter:var(--blur);border-bottom:1px solid var(--bord)
+    }
+    .toolbar h2{font-size:1rem;font-weight:800;max-width:55vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .toolbar p{font-size:.82rem;color:var(--tm)}
+    .toolbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .zoom-badge{font-size:.8rem;font-weight:800;color:var(--tm);min-width:44px;text-align:center}
+
+    .viewer{flex:1;padding:24px 18px 96px;overflow:auto}
+    .stage{display:flex;justify-content:center;width:100%}
+    .pdf-shell{background:#fff;border-radius:18px;overflow:hidden;box-shadow:var(--sh2);max-width:100%}
+    .pdf-shell canvas{display:block;max-width:100%;height:auto}
+
+    .text-panel{
+      background:var(--card);border-top:1px solid rgba(0,184,148,.16);color:var(--t1);padding:18px 18px 22px;
+      font-size:.96rem;line-height:1.85;word-break:break-word
+    }
+    .karaoke-word{border-radius:6px;padding:1px 3px;transition:background .12s,color .12s,box-shadow .12s}
+    .karaoke-word.active{background:var(--grn);color:#fff;box-shadow:0 0 12px rgba(0,184,148,.45)}
+
+    .empty{
+      max-width:460px;margin:0 auto;text-align:center;background:var(--card);border:1px solid var(--bord);border-radius:32px;
+      padding:42px 28px;box-shadow:var(--sh)
+    }
+    .empty-icon{
+      width:88px;height:88px;border-radius:50%;margin:0 auto 16px;display:grid;place-items:center;color:#fff;
+      background:linear-gradient(135deg,var(--grn),var(--amb));box-shadow:var(--glow)
+    }
+    .empty h3{font-size:1.35rem;font-weight:800;margin-bottom:8px}
+    .empty p{font-size:.93rem;color:var(--t2);margin-bottom:18px}
+
+    .help-list{list-style:none;display:flex;flex-direction:column;gap:8px;color:var(--t2);font-size:.84rem}
+    .help-list strong{color:var(--grn)}
+
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);opacity:0;visibility:hidden;transition:.2s;z-index:45}
+    .overlay.on{opacity:1;visibility:visible}
+    .toast{
+      position:fixed;left:50%;bottom:94px;transform:translateX(-50%) translateY(18px);opacity:0;pointer-events:none;z-index:80;
+      max-width:min(90vw,560px);text-align:center;padding:11px 16px;border-radius:999px;background:var(--card);
+      border:1px solid var(--bord);box-shadow:var(--sh);backdrop-filter:var(--blur);font-size:.84rem;font-weight:700;transition:.25s
+    }
+    .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    .tracking-restore{position:fixed;right:18px;bottom:108px;z-index:58;display:none;align-items:center;gap:8px;padding:12px 16px;border:none;border-radius:999px;background:linear-gradient(110deg,var(--grn),var(--grn-2));color:#fff;box-shadow:0 10px 26px rgba(0,184,148,.28)}
+    .tracking-restore.on{display:inline-flex}
+    @media (max-width:940px){.tracking-restore{right:12px;bottom:92px;padding:11px 14px;font-size:.82rem}}
+
+    .mobile-nav{
+      display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;padding:8px 4px calc(8px + env(safe-area-inset-bottom));gap:2px;
+      background:rgba(15,14,12,.94);backdrop-filter:blur(24px);border-top:1px solid var(--bord);justify-content:space-around
+    }
+    html[data-theme="light"] .mobile-nav{background:rgba(246,243,238,.96)}
+    .mobile-nav .btn{flex:1;flex-direction:column;border:none;background:transparent;padding:7px 4px;font-size:.63rem;font-weight:800;color:var(--tm);gap:3px}
+    .mobile-nav .btn.active{color:var(--grn)}
+    .mobile-nav .btn-danger{color:var(--red)}
+    .mobile-nav .btn-accent,.mobile-nav .btn.paused{box-shadow:none}
+
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    @media (max-width:940px){
+      .app{grid-template-columns:1fr}
+      .sidebar{
+        position:fixed;left:0;top:0;width:min(88vw,330px);transform:translateX(-110%);transition:transform .25s;height:100dvh;
+        box-shadow:var(--sh2);z-index:50;background:var(--surf-solid)
+      }
+      .sidebar.open{transform:translateX(0)}
+      .mobile-nav{display:flex}
+      .toolbar{padding:10px 12px}
+      .toolbar h2{max-width:100%}
+      .viewer{padding:12px 10px 98px}
+    }
+    @media (max-width:620px){
+      .page-bar{grid-template-columns:auto 58px 1fr auto auto}
+      .grid-2{grid-template-columns:1fr 1fr}
+      .btn-lg{font-size:.88rem}
+      .brand h1{font-size:1.22rem}
+      .hint,.status,.help-list{font-size:.8rem}
+    }
+  </style>
+</head>
+<body>
+  <input id="pdfFile" type="file" accept="application/pdf" />
+  <div class="overlay" id="overlay"></div>
+  <div class="toast" id="toast"></div>
+
+  <button class="btn tracking-restore" id="restoreTrackingBtn" type="button" aria-label="Volver al modo seguimiento">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+    Volver al seguimiento
+  </button>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Panel lateral">
+      <div class="sidebar-inner">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 4h16v16H4z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/>
+            </svg>
+          </div>
+          <div>
+            <h1>VoxPDF</h1>
+            <p>Escucha, navega y estudia mejor.</p>
+          </div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <span class="panel-step">①</span>
+            <span class="panel-title">Documento</span>
+          </div>
+          <div class="panel-icon doc" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div class="stack">
+            <label class="btn btn-primary file-label" for="pdfFile">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Abrir PDF
+            </label>
+            <button class="btn btn-secondary w-full" id="demoBtn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
+              </svg>
+              Cargar ejemplo
+            </button>
+            <p class="status" id="loadStatus">Selecciona un PDF para empezar.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <span class="panel-step">②</span>
+            <span class="panel-title">Página</span>
+          </div>
+          <div class="panel-icon nav" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </div>
+          <div class="stack">
+            <div class="page-bar">
+              <button class="btn btn-secondary btn-sm" id="prevPage" type="button" aria-label="Página anterior">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <input id="pageNumber" class="page-input" type="number" min="1" value="1" inputmode="numeric" aria-label="Número de página" />
+              <span class="page-count">de <strong id="pageCount">—</strong></span>
+              <button class="btn btn-primary btn-sm" id="goPageBtn" type="button">Ir</button>
+              <button class="btn btn-secondary btn-sm" id="nextPage" type="button" aria-label="Página siguiente">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+            <p class="status" id="navStatus">Carga un PDF y navega por sus páginas.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <span class="panel-step">③</span>
+            <span class="panel-title">Buscador</span>
+          </div>
+          <div class="panel-icon search" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </div>
+          <div class="stack">
+            <input class="field" id="searchInput" type="search" placeholder="Escribe una palabra o frase" aria-label="Buscar en el PDF" />
+            <button class="btn btn-primary w-full" id="searchBtn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+              Buscar
+            </button>
+            <p class="status" id="searchResults">Busca una coincidencia dentro del documento.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <span class="panel-step">④</span>
+            <span class="panel-title">Lectura en voz</span>
+          </div>
+          <div class="panel-icon voice" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </div>
+          <div class="stack">
+            <button class="btn btn-primary btn-lg w-full" id="readPageBtn" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Leer página actual
+            </button>
+            <div class="grid-2">
+              <button class="btn btn-accent" id="pauseBtn" type="button">
+                <svg id="pauseIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                </svg>
+                Pausa
+              </button>
+              <button class="btn btn-danger" id="stopBtn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                Stop
+              </button>
+            </div>
+            <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="stack">
+              <label class="label" for="voiceSelect">Voz en español</label>
+              <select class="field select" id="voiceSelect"></select>
+            </div>
+            <div class="stack">
+              <label class="label" for="rateRange">Velocidad</label>
+              <div class="range-wrap">
+                <input id="rateRange" class="range" type="range" min="0.5" max="2" step="0.1" value="1" />
+                <span class="range-val" id="rateVal">1.0×</span>
+              </div>
+            </div>
+            <div class="stack">
+              <label class="label" for="pitchRange">Tono</label>
+              <div class="range-wrap">
+                <input id="pitchRange" class="range" type="range" min="0.5" max="1.5" step="0.1" value="1" />
+                <span class="range-val" id="pitchVal">1.0</span>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-copy">
+                <strong>Seguimiento visual</strong>
+                <span id="trackingHint">Muestra el panel y resalta la palabra actual.</span>
+              </div>
+              <label class="switch" for="trackingToggle" aria-label="Mostrar u ocultar seguimiento visual">
+                <input id="trackingToggle" type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <p class="status" id="voiceStatus">Preparado para leer en voz alta.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <span class="panel-step">⑤</span>
+            <span class="panel-title">Cómo usar</span>
+          </div>
+          <div class="panel-icon help" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 5.82 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <ul class="help-list">
+            <li>Abre un PDF o usa el ejemplo.</li>
+            <li>Ve a la página deseada con <strong>Ir</strong>.</li>
+            <li>Pulsa <strong>Leer página actual</strong>.</li>
+            <li><strong>Pausa</strong> conserva tu avance y <strong>Stop</strong> reinicia la lectura.</li>
+            <li>El panel inferior resalta cada palabra durante la lectura.</li>
+          </ul>
+        </section>
+      </div>
+    </aside>
+
+    <main class="viewer-wrap">
+      <header class="toolbar">
+        <div>
+          <h2 id="docTitle">📄 Ningún documento</h2>
+          <p id="docMeta">Sube un PDF para comenzar.</p>
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary btn-sm" id="zoomOut" type="button" aria-label="Alejar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <span class="zoom-badge" id="zoomBadge">100%</span>
+          <button class="btn btn-secondary btn-sm" id="zoomIn" type="button" aria-label="Acercar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="trackingBtn" type="button" aria-label="Activar o desactivar seguimiento visual">
+            <svg id="trackingBtnIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span id="trackingBtnText">Seguimiento</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="themeBtn" type="button" aria-label="Cambiar tema">
+            <svg id="themeIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="viewer" id="viewerArea">
+        <div class="stage" id="pdfStage">
+          <div class="empty" id="emptyState">
+            <div class="empty-icon" aria-hidden="true">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M6 3.5h8l4 4V20.5H6z"/><path d="M14 3.5v4h4"/><path d="M8.5 15c1.6-.1 2.4-1 2.4-2.2 0-1.3-.9-2-2.4-2H8v5.7"/><path d="M12.5 10.8h1.5c1.8 0 2.9 1 2.9 2.8 0 1.9-1.1 2.9-2.9 2.9h-1.5z"/>
+              </svg>
+            </div>
+            <h3>Escucha tus documentos</h3>
+            <p>Abre un PDF, navega a la página y reproduce la lectura con voz.</p>
+            <label class="btn btn-primary file-label" for="pdfFile">Elegir PDF ahora</label>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Controles móviles">
+    <button class="btn" id="bnPrev" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Ant.</button>
+    <button class="btn active" id="bnRead" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Leer</button>
+    <button class="btn btn-accent" id="bnPause" type="button"><svg id="bnPauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pausa</button>
+    <button class="btn btn-danger" id="bnStop" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>Stop</button>
+    <button class="btn" id="bnNext" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>Sig.</button>
+    <button class="btn" id="sidebarBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>Menú</button>
+  </nav>
+
+  <script type="module">
+    import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+
+    const $ = id => document.getElementById(id);
+    const E = {
+      pdfFile: $('pdfFile'), demoBtn: $('demoBtn'), loadStatus: $('loadStatus'),
+      prevPage: $('prevPage'), nextPage: $('nextPage'), pageNumber: $('pageNumber'), pageCount: $('pageCount'), goPageBtn: $('goPageBtn'), navStatus: $('navStatus'),
+      searchInput: $('searchInput'), searchBtn: $('searchBtn'), searchResults: $('searchResults'),
+      readPageBtn: $('readPageBtn'), pauseBtn: $('pauseBtn'), stopBtn: $('stopBtn'), pauseIcon: $('pauseIcon'),
+      voiceSelect: $('voiceSelect'), rateRange: $('rateRange'), rateVal: $('rateVal'), pitchRange: $('pitchRange'), pitchVal: $('pitchVal'), trackingToggle: $('trackingToggle'), trackingHint: $('trackingHint'), voiceStatus: $('voiceStatus'),
+      progress: $('progress'), progressBar: $('progressBar'),
+      docTitle: $('docTitle'), docMeta: $('docMeta'), viewerArea: $('viewerArea'), pdfStage: $('pdfStage'), emptyState: $('emptyState'),
+      zoomIn: $('zoomIn'), zoomOut: $('zoomOut'), zoomBadge: $('zoomBadge'), trackingBtn: $('trackingBtn'), trackingBtnIcon: $('trackingBtnIcon'), trackingBtnText: $('trackingBtnText'), themeBtn: $('themeBtn'), themeIcon: $('themeIcon'),
+      sidebar: $('sidebar'), sidebarBtn: $('sidebarBtn'), overlay: $('overlay'), toast: $('toast'), restoreTrackingBtn: $('restoreTrackingBtn'),
+      bnPrev: $('bnPrev'), bnRead: $('bnRead'), bnPause: $('bnPause'), bnPauseIcon: $('bnPauseIcon'), bnStop: $('bnStop'), bnNext: $('bnNext')
+    };
+
+    const ICON_PAUSE = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+    const ICON_PLAY = '<polygon points="5 3 19 12 5 21 5 3"/>';
+    const DEMO_URL = 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf';
+
+    const S = {
+      doc: null,
+      page: 1,
+      scale: 1.2,
+      renderTask: null,
+      cache: new Map(),
+      itemsCache: new Map(),
+      reading: false,
+      paused: false,
+      chunks: [],
+      currentChunk: 0,
+      speechToken: 0,
+      voices: [],
+      engine: 'speech',
+      rate: 1,
+      pitch: 1,
+      wordIndex: 0,
+      markerTimer: null,
+      allWords: [],
+      activeWordEl: null,
+      showTracking: true
+    };
+
+    const prefKey = 'voxpdf-prefs-v2';
+
+    function toast(message){
+      E.toast.textContent = message;
+      E.toast.classList.add('on');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => E.toast.classList.remove('on'), 2600);
+    }
+
+    function isMobile(){ return window.innerWidth <= 940; }
+    function openSidebar(){ if(isMobile()){ E.sidebar.classList.add('open'); E.overlay.classList.add('on'); document.body.style.overflow='hidden'; } }
+    function closeSidebar(){ E.sidebar.classList.remove('open'); E.overlay.classList.remove('on'); document.body.style.overflow=''; }
+
+    function escapeHTML(str){
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function savePrefs(){
+      localStorage.setItem(prefKey, JSON.stringify({
+        theme: document.documentElement.getAttribute('data-theme') || 'dark',
+        rate: E.rateRange.value,
+        pitch: E.pitchRange.value,
+        voice: E.voiceSelect.value,
+        showTracking: S.showTracking
+      }));
+    }
+
+    function loadPrefs(){
+      try{
+        const saved = JSON.parse(localStorage.getItem(prefKey) || '{}');
+        const theme = saved.theme === 'light' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        E.rateRange.value = saved.rate || '1';
+        E.pitchRange.value = saved.pitch || '1';
+        S.showTracking = saved.showTracking !== false;
+        E.trackingToggle.checked = S.showTracking;
+        E.trackingHint.textContent = S.showTracking ? 'Muestra el panel y resalta la palabra actual.' : 'Oculta el panel y el resaltado durante la lectura.';
+        E.rateVal.textContent = Number(E.rateRange.value).toFixed(1) + '×';
+        E.pitchVal.textContent = Number(E.pitchRange.value).toFixed(1);
+        updateThemeIcon();
+      }catch{}
+    }
+
+    function updateThemeIcon(){
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      E.themeIcon.innerHTML = dark
+        ? '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>'
+        : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    }
+
+    function hasDoc(){ return !!S.doc; }
+    function canRead(){ return hasDoc() && !!(S.cache.get(S.page) || '').trim(); }
+
+    function setDisabled(el, value){ el.disabled = !!value; }
+
+    function syncControls(){
+      const noDoc = !hasDoc();
+      const noText = !canRead();
+      [E.prevPage,E.nextPage,E.pageNumber,E.goPageBtn,E.searchInput,E.searchBtn,E.zoomIn,E.zoomOut,E.bnPrev,E.bnNext].forEach(el => setDisabled(el, noDoc));
+      [E.readPageBtn,E.bnRead].forEach(el => setDisabled(el, noText));
+      const noSession = !S.chunks.length;
+      [E.pauseBtn,E.stopBtn,E.bnPause,E.bnStop,E.voiceSelect,E.rateRange,E.pitchRange].forEach(el => setDisabled(el, noDoc || (el===E.pauseBtn||el===E.stopBtn||el===E.bnPause||el===E.bnStop ? noSession : false)));
+    }
+
+    function setVoiceStatus(text, cls=''){
+      E.voiceStatus.textContent = text;
+      E.voiceStatus.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function setLoadStatus(text, cls=''){
+      E.loadStatus.textContent = text;
+      E.loadStatus.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function setNavStatus(text, cls=''){
+      E.navStatus.textContent = text;
+      E.navStatus.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function setSearchStatus(text, cls=''){
+      E.searchResults.textContent = text;
+      E.searchResults.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function setPlayerState(state){
+      const paused = state === 'paused';
+      const reading = state === 'reading';
+      [E.pauseBtn,E.bnPause].forEach(btn => btn.classList.toggle('paused', paused));
+      E.pauseIcon.innerHTML = paused ? ICON_PLAY : ICON_PAUSE;
+      E.bnPauseIcon.innerHTML = paused ? ICON_PLAY : ICON_PAUSE;
+      E.progress.classList.toggle('on', reading || paused);
+      if(state === 'idle') E.progressBar.style.width = '0%';
+    }
+
+    function updateProgress(index, total){
+      E.progressBar.style.width = total ? Math.min(100, Math.round((index / total) * 100)) + '%' : '0%';
+    }
+
+    function splitChunks(text){
+      const clean = text.replace(/\s+/g,' ').trim();
+      if(!clean) return [];
+      const sentences = clean
+        .replace(/([.?!;:])\s+/g, '$1|||')
+        .split('|||')
+        .map(s => s.trim())
+        .filter(Boolean);
+      const out = [];
+      let current = '';
+      for(const sentence of sentences){
+        if((current + ' ' + sentence).trim().length > 170 && current){
+          out.push(current.trim());
+          current = sentence;
+        }else{
+          current += (current ? ' ' : '') + sentence;
+        }
+      }
+      if(current.trim()) out.push(current.trim());
+      return out.length ? out : [clean];
+    }
+
+    function stopMarker(){
+      clearInterval(S.markerTimer);
+      S.markerTimer = null;
+    }
+
+    function clearActiveWord(){
+      if(S.activeWordEl) S.activeWordEl.classList.remove('active');
+      S.activeWordEl = null;
+    }
+
+    function highlightWord(index){
+      if(!S.showTracking) return;
+      const el = document.getElementById(`w${index}`);
+      if(!el) return;
+      clearActiveWord();
+      el.classList.add('active');
+      S.activeWordEl = el;
+    }
+
+    function clearTextPanel(resetState = true){
+      const existing = document.getElementById('textPanel');
+      if(existing) existing.remove();
+      clearActiveWord();
+      if(resetState){
+        stopMarker();
+        S.allWords = [];
+        S.wordIndex = 0;
+      }
+    }
+
+    function buildTextPanel(text){
+      clearTextPanel(false);
+      if(!S.showTracking) return;
+      const shell = E.pdfStage.querySelector('.pdf-shell');
+      if(!shell) return;
+      const panel = document.createElement('div');
+      panel.id = 'textPanel';
+      panel.className = 'text-panel';
+      S.allWords = text.split(/\s+/).filter(Boolean);
+      panel.innerHTML = S.allWords.map((word, i) => `<span class="karaoke-word" id="w${i}">${escapeHTML(word)}</span>`).join(' ');
+      shell.appendChild(panel);
+    }
+
+    function getChunkStartWord(chunks, idx){
+      let count = 0;
+      for(let i=0;i<idx;i++) count += chunks[i].split(/\s+/).filter(Boolean).length;
+      return count;
+    }
+
+    function startEstimatedMarker(chunkText, chunkIndex, rate){
+      stopMarker();
+      const words = chunkText.split(/\s+/).filter(Boolean);
+      if(!words.length) return;
+      const start = getChunkStartWord(S.chunks, chunkIndex);
+      const charsPerSec = Math.max(8, rate * 13);
+      const durationMs = Math.max(350, (chunkText.length / charsPerSec) * 1000);
+      const msPerWord = Math.max(70, Math.floor(durationMs / words.length));
+      let localIndex = 0;
+      S.wordIndex = start;
+      highlightWord(S.wordIndex);
+      S.markerTimer = setInterval(() => {
+        localIndex++;
+        if(localIndex >= words.length){ stopMarker(); return; }
+        S.wordIndex = start + localIndex;
+        highlightWord(S.wordIndex);
+      }, msPerWord);
+    }
+
+    function syncTrackingUI(){
+      E.trackingToggle.checked = S.showTracking;
+      E.trackingHint.textContent = S.showTracking
+        ? 'Muestra el panel y resalta la palabra actual.'
+        : 'Oculta el panel y el resaltado durante la lectura.';
+      E.trackingBtnText.textContent = S.showTracking ? 'Ocultar seguimiento' : 'Mostrar seguimiento';
+      E.trackingBtn.setAttribute('aria-label', S.showTracking ? 'Ocultar seguimiento visual' : 'Activar seguimiento visual');
+      E.trackingBtnIcon.innerHTML = S.showTracking
+        ? '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/>'
+        : '<path d="M3 3l18 18"/><path d="M10.6 10.7a3 3 0 0 0 4.24 4.24"/><path d="M9.88 5.09A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.06 3.85"/><path d="M6.61 6.62C3.6 8.27 2 12 2 12a17.73 17.73 0 0 0 5.39 5.38"/>';
+      E.restoreTrackingBtn.classList.toggle('on', !S.showTracking);
+    }
+
+    function refreshTrackingPanel(){
+      if(!hasDoc()) return;
+      const text = (S.cache.get(S.page) || '').trim();
+      if(!text){
+        clearTextPanel(false);
+        return;
+      }
+      if(S.showTracking){
+        buildTextPanel(text);
+        const safeIndex = Number.isInteger(S.wordIndex) && S.wordIndex >= 0 ? S.wordIndex : 0;
+        requestAnimationFrame(() => highlightWord(safeIndex));
+      }else{
+        clearTextPanel(false);
+      }
+    }
+
+    function toggleTracking(){
+      S.showTracking = E.trackingToggle.checked;
+      syncTrackingUI();
+      savePrefs();
+      refreshTrackingPanel();
+      toast(S.showTracking ? 'Seguimiento visual activado.' : 'Seguimiento visual oculto.');
+    }
+
+    function finishReading(message='Lectura finalizada'){
+      S.reading = false;
+      S.paused = false;
+      S.currentChunk = 0;
+      S.chunks = [];
+      stopMarker();
+      clearActiveWord();
+      setPlayerState('idle');
+      setVoiceStatus('✅ ' + message, 'ok');
+      syncControls();
+    }
+
+    function cancelSpeech(){
+      try{ if(typeof responsiveVoice !== 'undefined') responsiveVoice.cancel(); }catch{}
+      try{ window.speechSynthesis.cancel(); }catch{}
+    }
+
+    function getSelectedVoiceName(){
+      const opt = E.voiceSelect.selectedOptions?.[0];
+      return opt?.dataset?.voiceName || opt?.textContent || '';
+    }
+
+    function loadVoices(){
+      const options = [];
+      if(typeof responsiveVoice !== 'undefined' && Array.isArray(responsiveVoice.getVoices?.())){
+        const rv = responsiveVoice.getVoices().filter(v => /spanish/i.test(v.name));
+        rv.forEach(v => options.push({engine:'responsiveVoice', label:v.name, value:v.name, voiceName:v.name}));
+      }
+      const synth = (window.speechSynthesis?.getVoices() || []).filter(v => (v.lang || '').toLowerCase().startsWith('es'));
+      synth.forEach(v => options.push({engine:'speech', label:`${v.name} (${v.lang})`, value:`speech::${v.name}`, voiceName:v.name}));
+      if(!options.length){
+        options.push({engine:'speech', label:'Voz del sistema', value:'speech::default', voiceName:'default'});
+      }
+      const unique = [];
+      const seen = new Set();
+      for(const item of options){
+        const key = item.value;
+        if(seen.has(key)) continue;
+        seen.add(key);
+        unique.push(item);
+      }
+      E.voiceSelect.innerHTML = unique.map((v, i) => `<option value="${escapeHTML(v.value)}" data-engine="${escapeHTML(v.engine)}" data-voice-name="${escapeHTML(v.voiceName)}">${escapeHTML(v.label)}</option>`).join('');
+      try{
+        const saved = JSON.parse(localStorage.getItem(prefKey) || '{}');
+        if(saved.voice && [...E.voiceSelect.options].some(o => o.value === saved.voice)) E.voiceSelect.value = saved.voice;
+      }catch{}
+      setVoiceStatus('Voz lista. Toca Leer.', 'ok');
+      savePrefs();
+    }
+
+    async function cacheText(pageNumber){
+      if(!S.doc || S.cache.has(pageNumber)) return;
+      try{
+        const page = await S.doc.getPage(pageNumber);
+        const textContent = await page.getTextContent();
+        S.itemsCache.set(pageNumber, textContent.items);
+        const text = textContent.items.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
+        S.cache.set(pageNumber, text);
+      }catch(error){
+        console.error(error);
+      }
+    }
+
+    function createCanvasShell(){
+      const shell = document.createElement('div');
+      shell.className = 'pdf-shell';
+      const canvas = document.createElement('canvas');
+      shell.appendChild(canvas);
+      return {shell, canvas};
+    }
+
+    async function renderPage(pageNumber){
+      if(!S.doc) return;
+      try{
+        const keepReadingState = S.reading || S.paused;
+        stopMarker();
+        clearTextPanel(false);
+        if(S.renderTask){ try{ S.renderTask.cancel(); }catch{} }
+        const page = await S.doc.getPage(pageNumber);
+        const viewerWidth = E.viewerArea.clientWidth || window.innerWidth;
+        const baseViewport = page.getViewport({scale:1});
+        const available = isMobile() ? viewerWidth - 24 : viewerWidth - 80;
+        const fitScale = Math.max(0.45, available / baseViewport.width);
+        if(!Number.isFinite(S.scale) || S.scale <= 0){
+          S.scale = fitScale;
+        }
+        const scale = Math.max(0.45, Math.min(3, S.scale));
+        const viewport = page.getViewport({scale});
+
+        const {shell, canvas} = createCanvasShell();
+        const ctx = canvas.getContext('2d', {alpha:false});
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+        canvas.style.width = viewport.width + 'px';
+        canvas.style.height = viewport.height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        E.pdfStage.innerHTML = '';
+        E.pdfStage.appendChild(shell);
+
+        S.renderTask = page.render({canvasContext:ctx, viewport});
+        await S.renderTask.promise;
+        S.renderTask = null;
+
+        S.page = pageNumber;
+        E.pageNumber.value = pageNumber;
+        E.zoomBadge.textContent = Math.round(scale * 100) + '%';
+        E.docMeta.textContent = `Página ${pageNumber} de ${S.doc.numPages} · zoom ${Math.round(scale * 100)}%`;
+        await cacheText(pageNumber);
+        if(S.showTracking){
+          refreshTrackingPanel();
+          if(keepReadingState && S.chunks.length && S.currentChunk < S.chunks.length){
+            const safeIndex = Number.isInteger(S.wordIndex) && S.wordIndex >= 0 ? S.wordIndex : getChunkStartWord(S.chunks, S.currentChunk);
+            requestAnimationFrame(() => {
+              highlightWord(safeIndex);
+              if(S.reading){
+                startEstimatedMarker(S.chunks[S.currentChunk], S.currentChunk, S.rate);
+              }
+            });
+          }
+        }
+        syncControls();
+      }catch(error){
+        if(error?.name !== 'RenderingCancelledException') console.error(error);
+      }
+    }
+
+    async function goToPage(target = Number(E.pageNumber.value)){
+      if(!S.doc){ toast('Primero abre un PDF.'); return; }
+      const pageNumber = Number(target);
+      if(!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > S.doc.numPages){
+        toast(`Página inválida: usa un valor entre 1 y ${S.doc.numPages}.`);
+        E.pageNumber.value = S.page;
+        return;
+      }
+      stopReading();
+      setNavStatus(`Cargando página ${pageNumber}...`, 'warn');
+      await renderPage(pageNumber);
+      await cacheText(pageNumber);
+      setNavStatus(`✅ Página ${pageNumber} lista para leer.`, 'ok');
+      if(isMobile()) closeSidebar();
+    }
+
+    async function loadPdf(source, name){
+      stopReading(false);
+      clearTextPanel();
+      setLoadStatus('Cargando documento...', 'warn');
+      setNavStatus('Preparando visor...', 'warn');
+      setSearchStatus('Busca una coincidencia dentro del documento.');
+      try{
+        const task = typeof source === 'string'
+          ? pdfjsLib.getDocument(source)
+          : pdfjsLib.getDocument({data: new Uint8Array(source)});
+        S.doc = await task.promise;
+        S.cache.clear();
+        S.itemsCache.clear();
+        S.page = 1;
+        S.scale = 1.2;
+        E.pageCount.textContent = S.doc.numPages;
+        E.pageNumber.value = 1;
+        E.docTitle.textContent = '📄 ' + name;
+        await renderPage(1);
+        await cacheText(1);
+        setLoadStatus(`✅ Documento cargado: ${S.doc.numPages} páginas.`, 'ok');
+        setNavStatus('✅ Página 1 lista para leer.', 'ok');
+        toast('PDF cargado correctamente.');
+        if(isMobile()) closeSidebar();
+      }catch(error){
+        console.error(error);
+        S.doc = null;
+        E.pageCount.textContent = '—';
+        E.docTitle.textContent = '📄 Ningún documento';
+        E.docMeta.textContent = 'Sube un PDF para comenzar.';
+        setLoadStatus('❌ No se pudo abrir el PDF.', 'stop');
+        setNavStatus('Error al cargar el documento.', 'stop');
+      }
+      syncControls();
+    }
+
+    async function searchPdf(){
+      if(!S.doc){ toast('Primero abre un PDF.'); return; }
+      const query = E.searchInput.value.trim().toLowerCase();
+      if(!query){
+        setSearchStatus('Escribe algo para buscar.', 'warn');
+        return;
+      }
+      stopReading();
+      setSearchStatus('Buscando coincidencias...', 'warn');
+      const hits = [];
+      for(let i=1;i<=S.doc.numPages;i++){
+        await cacheText(i);
+        if((S.cache.get(i) || '').toLowerCase().includes(query)) hits.push(i);
+      }
+      if(hits.length){
+        await goToPage(hits[0]);
+        setSearchStatus(`✅ Encontrado en páginas ${hits.slice(0,6).join(', ')}${hits.length>6?'...':''}.`, 'ok');
+      }else{
+        setSearchStatus('❌ No se encontraron coincidencias.', 'stop');
+      }
+    }
+
+    function speakWithResponsiveVoice(text, onEnd){
+      const name = getSelectedVoiceName();
+      responsiveVoice.speak(text, name || 'Spanish Latin American Female', {
+        rate: S.rate,
+        pitch: S.pitch,
+        volume: 1,
+        onend: onEnd,
+        onerror: onEnd
+      });
+    }
+
+    function speakWithSpeechSynthesis(text, chunkIndex, token, onEnd){
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'es-ES';
+      utterance.rate = S.rate;
+      utterance.pitch = S.pitch;
+      utterance.volume = 1;
+      const voiceName = getSelectedVoiceName();
+      const voices = window.speechSynthesis?.getVoices() || [];
+      const selected = voices.find(v => v.name === voiceName);
+      if(selected) utterance.voice = selected;
+
+      utterance.onboundary = event => {
+        if(token !== S.speechToken || S.paused || event.name !== 'word') return;
+        stopMarker();
+        const before = text.slice(0, event.charIndex);
+        const localCount = before.split(/\s+/).filter(Boolean).length;
+        S.wordIndex = getChunkStartWord(S.chunks, chunkIndex) + localCount;
+        highlightWord(S.wordIndex);
+      };
+      utterance.onend = onEnd;
+      utterance.onerror = e => {
+        if(e.error === 'interrupted' || e.error === 'canceled') return;
+        onEnd();
+      };
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakChunk(index, token){
+      if(token !== S.speechToken || S.paused) return;
+      if(index >= S.chunks.length){
+        finishReading();
+        return;
+      }
+      S.currentChunk = index;
+      updateProgress(index, S.chunks.length);
+      setVoiceStatus(`🔊 Página ${S.page} · fragmento ${index + 1}/${S.chunks.length}`,'ok');
+      const text = S.chunks[index];
+      startEstimatedMarker(text, index, S.rate);
+
+      const onEnd = () => {
+        if(token !== S.speechToken || S.paused) return;
+        stopMarker();
+        const words = text.split(/\s+/).filter(Boolean).length;
+        S.wordIndex = getChunkStartWord(S.chunks, index) + Math.max(0, words - 1);
+        highlightWord(S.wordIndex);
+        speakChunk(index + 1, token);
+      };
+
+      const opt = E.voiceSelect.selectedOptions?.[0];
+      const engine = opt?.dataset?.engine || 'speech';
+      if(engine === 'responsiveVoice' && typeof responsiveVoice !== 'undefined'){
+        speakWithResponsiveVoice(text, onEnd);
+      }else{
+        speakWithSpeechSynthesis(text, index, token, onEnd);
+      }
+    }
+
+    function readCurrentPage(){
+      if(!S.doc){ toast('Primero abre un PDF.'); return; }
+      const text = (S.cache.get(S.page) || '').trim();
+      if(!text){ toast('Esta página no tiene texto seleccionable.'); return; }
+      cancelSpeech();
+      S.rate = parseFloat(E.rateRange.value);
+      S.pitch = parseFloat(E.pitchRange.value);
+      S.chunks = splitChunks(text);
+      S.currentChunk = 0;
+      S.paused = false;
+      S.reading = true;
+      S.speechToken += 1;
+      S.wordIndex = 0;
+      buildTextPanel(text);
+      setPlayerState('reading');
+      setVoiceStatus(`🔊 Leyendo página ${S.page}...`, 'ok');
+      updateProgress(0, S.chunks.length);
+      syncControls();
+      const token = S.speechToken;
+      setTimeout(() => { if(token === S.speechToken) speakChunk(0, token); }, 70);
+      if(isMobile()) closeSidebar();
+    }
+
+    function togglePause(){
+      if(!S.chunks.length) return;
+      if(!S.paused){
+        S.paused = true;
+        S.reading = false;
+        S.speechToken += 1;
+        stopMarker();
+        cancelSpeech();
+        setPlayerState('paused');
+        setVoiceStatus(`⏸ En pausa · fragmento ${S.currentChunk + 1}/${S.chunks.length}`, 'pause');
+      }else{
+        S.paused = false;
+        S.reading = true;
+        S.speechToken += 1;
+        setPlayerState('reading');
+        setVoiceStatus(`🔊 Reanudando página ${S.page}...`, 'ok');
+        const token = S.speechToken;
+        setTimeout(() => { if(token === S.speechToken) speakChunk(S.currentChunk, token); }, 70);
+      }
+      syncControls();
+    }
+
+    function stopReading(resetStatus=true){
+      S.speechToken += 1;
+      S.reading = false;
+      S.paused = false;
+      S.currentChunk = 0;
+      S.chunks = [];
+      S.wordIndex = 0;
+      stopMarker();
+      clearActiveWord();
+      cancelSpeech();
+      setPlayerState('idle');
+      if(resetStatus) setVoiceStatus('Detenido.', 'stop');
+      syncControls();
+    }
+
+    function toggleTheme(){
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      updateThemeIcon();
+      savePrefs();
+    }
+
+    async function handleZoom(delta){
+      if(!S.doc) return;
+      S.scale = Math.max(0.45, Math.min(3, +(S.scale + delta).toFixed(2)));
+      await renderPage(S.page);
+      if(S.showTracking){
+        refreshTrackingPanel();
+      }
+    }
+
+    E.sidebarBtn.addEventListener('click', () => E.sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+    E.overlay.addEventListener('click', closeSidebar);
+    E.themeBtn.addEventListener('click', toggleTheme);
+    E.trackingBtn.addEventListener('click', () => { E.trackingToggle.checked = !S.showTracking; toggleTracking(); });
+    E.restoreTrackingBtn.addEventListener('click', () => { if(!S.showTracking){ E.trackingToggle.checked = true; toggleTracking(); } else { refreshTrackingPanel(); } });
+
+    E.pdfFile.addEventListener('change', async event => {
+      const file = event.target.files?.[0];
+      if(!file) return;
+      await loadPdf(await file.arrayBuffer(), file.name);
+      event.target.value = '';
+    });
+    E.demoBtn.addEventListener('click', () => loadPdf(DEMO_URL, 'Demo PDF'));
+
+    E.goPageBtn.addEventListener('click', () => goToPage());
+    E.pageNumber.addEventListener('keydown', event => { if(event.key === 'Enter') goToPage(); });
+    E.prevPage.addEventListener('click', () => { if(S.doc && S.page > 1) goToPage(S.page - 1); });
+    E.nextPage.addEventListener('click', () => { if(S.doc && S.page < S.doc.numPages) goToPage(S.page + 1); });
+    E.bnPrev.addEventListener('click', () => { if(S.doc && S.page > 1) goToPage(S.page - 1); });
+    E.bnNext.addEventListener('click', () => { if(S.doc && S.page < S.doc.numPages) goToPage(S.page + 1); });
+
+    E.searchBtn.addEventListener('click', searchPdf);
+    E.searchInput.addEventListener('keydown', event => { if(event.key === 'Enter') searchPdf(); });
+
+    E.readPageBtn.addEventListener('click', readCurrentPage);
+    E.bnRead.addEventListener('click', readCurrentPage);
+    E.pauseBtn.addEventListener('click', togglePause);
+    E.bnPause.addEventListener('click', togglePause);
+    E.stopBtn.addEventListener('click', () => stopReading(true));
+    E.bnStop.addEventListener('click', () => stopReading(true));
+
+    E.zoomIn.addEventListener('click', () => handleZoom(.2));
+    E.zoomOut.addEventListener('click', () => handleZoom(-.2));
+
+    E.rateRange.addEventListener('input', () => {
+      E.rateVal.textContent = Number(E.rateRange.value).toFixed(1) + '×';
+      savePrefs();
+    });
+    E.pitchRange.addEventListener('input', () => {
+      E.pitchVal.textContent = Number(E.pitchRange.value).toFixed(1);
+      savePrefs();
+    });
+    E.voiceSelect.addEventListener('change', savePrefs);
+    E.trackingToggle.addEventListener('change', toggleTracking);
+
+    if(typeof responsiveVoice !== 'undefined' && typeof responsiveVoice.addEventListener === 'function'){
+      responsiveVoice.addEventListener('OnLoad', loadVoices);
+    }
+    if(window.speechSynthesis){
+      window.speechSynthesis.addEventListener?.('voiceschanged', loadVoices);
+    }
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if(!isMobile()) closeSidebar();
+        if(S.doc) renderPage(S.page);
+      }, 180);
+    });
+
+    loadPrefs();
+    syncTrackingUI();
+    loadVoices();
+    syncControls();
+    updateThemeIcon();
+  </script>
+</body>
+</html>
