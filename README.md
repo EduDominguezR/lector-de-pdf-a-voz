@@ -2,7 +2,7 @@
 
 Aplicacion web para escuchar documentos PDF en voz alta con seguimiento visual palabra por palabra (estilo karaoke), navegacion por paginas, buscador interno y soporte de tema oscuro y claro. No requiere servidor ni instalacion — funciona directo en el navegador.
 
-si desean probarlo sin instalar nada pueden hacerlo mediante este link:https://lectoravoz1.pages.dev
+si desean probarlo sin hacer nada pueden hacerlo mediante este link:https://lectoravoz1.pages.dev
 
 ---
 
