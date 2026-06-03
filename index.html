@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>VoxPDF — Lector Editorial Inteligente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+    <div id="overlay" class="overlay hidden" aria-hidden="true"></div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <button id="restoreTrackingBtn" class="tracking-restore-btn hidden" type="button" aria-label="Volver al seguimiento de lectura">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span>Ver Seguimiento</span>
+    </button>
+
+    <div class="app-layout">
+        <aside id="sidebar" class="sidebar">
+            <div>
+                <div class="sidebar-brand">
+                    <div class="sidebar-logo">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="22"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="sidebar-brand-text">VoxPDF</span>
+                        <span class="sidebar-brand-sub">Edición AI Premium</span>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <button class="sidebar-nav-btn active" data-panel="home">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span>Panel Lector</span>
+                    </button>
+                    <button class="sidebar-nav-btn" data-panel="library">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <span>Biblioteca</span>
+                    </button>
+                    <button class="sidebar-nav-btn" data-panel="settings">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        <span>Voz e Interfaz</span>
+                    </button>
+                </nav>
+            </div>
+
+            <button id="sidebarThemeBtn" class="sidebar-theme-btn" aria-label="Cambiar tema claro u oscuro">
+                <span class="sidebar-theme-btn-inner">
+                    <svg id="sidebarThemeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <span>Tema visual</span>
+                </span>
+            </button>
+        </aside>
+
+        <main class="main-content">
+            <header id="topBar" class="top-bar">
+                <div class="top-bar-left">
+                    <button id="menuToggle" class="menu-toggle" aria-label="Abrir menú de navegación">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                    <div class="top-bar-info">
+                        <h2 id="docTitleDisplay"> Cargando VoxPDF...</h2>
+                        <p id="docMetaDisplay">Sube un archivo para comenzar</p>
+                    </div>
+                </div>
+                <div class="top-bar-actions">
+                    <span id="zoomBadge" class="zoom-badge">120%</span>
+                    <button id="zoomOutBtn" class="icon-btn" aria-label="Alejar visualización" disabled>−</button>
+                    <button id="zoomInBtn" class="icon-btn" aria-label="Acercar visualización" disabled>+</button>
+                    <div class="top-bar-divider"></div>
+                    <button id="focusModeBtn" class="icon-btn" aria-label="Modo concentración (Shift+F)" title="Modo concentración">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                    </button>
+                    <button id="shortcutsHelpBtn" class="icon-btn shortcuts-btn" aria-label="Mostrar atajos de teclado">?</button>
+                </div>
+            </header>
+
+            <div id="contentScroll" class="content-scroll">
+                <section id="panelHome" class="panel-section">
+                    <div class="top-cards-row">
+                        <article class="card card-upload">
+                            <div class="card-glow"></div>
+                            <div class="card-inner">
+                                <div class="card-icon-wrapper">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                </div>
+                                <h3 class="card-title">Cargar Documento</h3>
+                                <p class="card-desc">Soporta cualquier archivo PDF estándar</p>
+                            </div>
+                            <div class="card-actions">
+                                <label for="pdfFileInput" class="btn btn-primary btn-full">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <span>Seleccionar PDF</span>
+                                </label>
+                                <input type="file" id="pdfFileInput" accept="application/pdf" class="sr-only">
+                                <button id="demoBtn" class="btn btn-ghost btn-full">Cargar archivo de muestra</button>
+                                <p id="loadStatus" class="card-status">Sin archivo de lectura</p>
+                            </div>
+                        </article>
+
+                        <article class="card card-voice">
+                            <div class="card-glow"></div>
+                            <div class="card-inner">
+                                <div class="card-icon-wrapper">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                </div>
+                                <h3 class="card-title">Lector de Voz Premium</h3>
+                                <p class="card-desc">Síntesis vocal fluida en español</p>
+                            </div>
+                            <div class="voice-premium-controls">
+                                <button id="readBtn" class="btn-play-premium" aria-label="Iniciar lectura de página" disabled>
+                                    <svg class="play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                </button>
+                                <div class="voice-secondary-actions">
+                                    <button id="stopBtn" class="btn-voice-secondary btn-stop" aria-label="Detener lectura" disabled>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="progressWrapper" class="progress-bar-wrapper hidden">
+                                <div id="progressFill" class="progress-bar-fill" style="width:0%"></div>
+                            </div>
+                            <p id="voiceStatus" class="card-status">Listo para iniciar lectura</p>
+                        </article>
+                    </div>
+
+                    <div class="search-bar-wrapper">
+                        <div class="search-bar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="search" id="searchInput" class="search-input" placeholder="Buscar palabras o conceptos clave en el PDF...">
+                            <button id="searchBtn" class="btn btn-sm btn-search" disabled>Buscar</button>
+                        </div>
+                        <p id="searchResults" class="search-results"></p>
+                    </div>
+
+                    <div class="split-view">
+                        <section class="split-left">
+                            <div id="pdfViewerContainer" class="pdf-viewer-container">
+                                <div id="pdfStage" class="pdf-stage">
+                                    <div id="emptyState" class="empty-state">
+                                        <div class="empty-icon-wrapper">
+                                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        </div>
+                                        <h3>Visor de Documentos</h3>
+                                        <p>Carga un documento para proyectar las páginas interactivas en este panel con soporte de zoom y síntesis verbal.</p>
+                                    </div>
+                                </div>
+                                <div id="trackingPanel" class="tracking-panel hidden">
+                                    <div class="tracking-header">
+                                        <span>Seguimiento de lectura actual</span>
+                                        <button id="closeTrackingBtn" class="tracking-close-btn" aria-label="Ocultar panel de seguimiento">×</button>
+                                    </div>
+                                    <div id="trackingContent" class="tracking-content"></div>
+                                </div>
+                                <div id="pdfZoomControls" class="pdf-zoom-controls hidden">
+                                    <button id="prevPageBtn" class="btn btn-sm btn-ghost" disabled>← Ant.</button>
+                                    <div class="page-nav">
+                                        <input type="number" id="pageNumberInput" class="page-input" min="1" value="1" disabled>
+                                        <span class="page-count-text">/ <strong id="pageCountDisplay">1</strong></span>
+                                        <button id="goPageBtn" class="btn btn-sm btn-go" disabled>Ir</button>
+                                    </div>
+                                    <button id="nextPageBtn" class="btn btn-sm btn-ghost" disabled>Sig. →</button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <aside id="iaPanel" class="split-right">
+                            <article id="summaryCard" class="ia-card summary-card">
+                                <div class="ia-card-header">
+                                    <h3 id="summaryTitle">
+                                        <span class="ia-title-icon">✨</span>
+                                        <span>Análisis Editorial</span>
+                                    </h3>
+                                    <span class="ia-badge">Gemini AI</span>
+                                </div>
+                                <div id="summaryBody" class="ia-card-body">
+                                    <p class="ia-placeholder">Abre un PDF de lectura. La inteligencia artificial recopilará automáticamente resúmenes y puntos clave del bloque de páginas actual.</p>
+                                </div>
+                                <div id="summaryKeywords" class="ia-keywords"></div>
+                                <p id="summaryMeta" class="ia-meta"></p>
+                                <div class="ia-actions">
+                                    <button id="readSummaryBtn" class="btn btn-sm btn-ia-action" disabled>🔊 Leer Resumen</button>
+                                    <button id="pauseSummaryBtn" class="btn btn-sm btn-ia-action" disabled>⏸ Pausar Resumen</button>
+                                    <button id="regenSummaryBtn" class="btn btn-sm btn-ia-action" disabled>🔄 Regenerar</button>
+                                    <button id="askToggleBtn" class="btn btn-sm btn-ia-chat" disabled>Chat</button>
+                                </div>
+                            </article>
+
+                            <article id="askCard" class="ia-card ask-card hidden">
+                                <div class="ia-card-header">
+                                    <h3>
+                                        <span class="ia-title-icon">💬</span>
+                                        <span>Preguntar al Documento</span>
+                                    </h3>
+                                    <button id="askCloseBtn" class="ia-close-btn" aria-label="Cerrar preguntas">×</button>
+                                </div>
+                                <div class="ask-input-row">
+                                    <input type="text" id="askInput" class="ask-input" placeholder="¿Qué dice el texto acerca de...?" disabled>
+                                    <button id="askSendBtn" class="btn btn-primary btn-sm" disabled>Enviar</button>
+                                </div>
+                                <div id="askHistory" class="ask-history"></div>
+                            </article>
+                        </aside>
+                    </div>
+
+                    <div id="miniMap" class="mini-map hidden">
+                        <span class="mini-map-label">Páginas</span>
+                        <div class="mini-map-bar">
+                            <div id="miniMapProgress" class="mini-map-progress" style="width:0%"></div>
+                            <div id="miniMapMarker" class="mini-map-marker" style="left:0%"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="panelLibrary" class="panel-section hidden">
+                    <div class="library-container">
+                        <div class="library-header">
+                            <div>
+                                <h2>📚 Biblioteca Guardada</h2>
+                                <p>Historial de documentos y favoritos en este navegador</p>
+                            </div>
+                        </div>
+                        <div id="libraryList" class="library-grid">
+                            <p class="library-empty">Cargando biblioteca...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="panelSettings" class="panel-section hidden">
+                    <div class="voice-settings">
+                        <div class="settings-header">
+                            <span class="settings-icon">🎙️</span>
+                            <h2>Configuración de Voz y Lectura</h2>
+                            <p>Calibra el sintetizador de lenguaje natural e interfaz</p>
+                        </div>
+
+                        <div class="settings-field">
+                            <label for="voiceSelect" class="settings-label">Voz en Español</label>
+                            <div class="settings-select-wrapper">
+                                <select id="voiceSelect" class="settings-select">
+                                    <option value="">Cargando voces del sistema...</option>
+                                </select>
+                                <div class="settings-select-chevron">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                            <small class="settings-hint">Elige de los motores generativos nativos de tu sistema operativo.</small>
+                        </div>
+
+                        <div class="settings-field">
+                            <div class="settings-field-header">
+                                <span class="settings-label">Velocidad</span>
+                                <span id="rateVal" class="settings-val">1.0×</span>
+                            </div>
+                            <input type="range" id="rateRange" min="0.5" max="2" step="0.1" value="1" class="settings-slider">
+                        </div>
+
+                        <div class="settings-field">
+                            <div class="settings-field-header">
+                                <span class="settings-label">Tono (Frecuencia)</span>
+                                <span id="pitchVal" class="settings-val">1.0</span>
+                            </div>
+                            <input type="range" id="pitchRange" min="0.5" max="1.5" step="0.1" value="1" class="settings-slider">
+                        </div>
+
+                        <div class="settings-field settings-field-toggle">
+                            <div>
+                                <span class="settings-label">Seguimiento Visual de Palabras</span>
+                                <small class="settings-hint">Subraya la palabra hablada en tiempo real</small>
+                            </div>
+                            <label class="toggle-switch" for="trackingSwitch">
+                                <input type="checkbox" id="trackingSwitch" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-field">
+                            <span class="settings-label">Proxy / Worker Personalizado (Opcional)</span>
+                            <input type="url" id="customWorkerInput" class="settings-select" placeholder="https://tu-worker.tusubdominio.workers.dev" style="font-size: 0.8rem; padding: 10px; text-transform: none; letter-spacing: normal;">
+                            <small class="settings-hint">Si desplegaste tu propio proxy en Cloudflare Workers, introduce su URL aquí para utilizar tu clave de Gemini privada en producción.</small>
+                        </div>
+
+                        <div class="settings-reset">
+                            <div>
+                                <h3>Restablecer valores</h3>
+                                <p>Restaura la configuración de fábrica de VoxPDF.</p>
+                            </div>
+                            <button id="resetPrefsBtn" class="btn btn-ghost btn-sm">Restablecer</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div id="shortcutsModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><span>⌨️</span> <span>Atajos de Teclado</span></h2>
+                <p>Mejora tu velocidad y productividad lectora</p>
+            </div>
+            <ul class="shortcuts-list">
+                <li><span>Pausar / Reanudar lectura</span><kbd>Espacio</kbd></li>
+                <li><span>Cambiar página</span><kbd>← / →</kbd></li>
+                <li><span>Enfocar buscador del PDF</span><kbd>Ctrl + F</kbd></li>
+                <li><span>Modo Concentración</span><kbd>Shift + F</kbd></li>
+                <li><span>Acercar Zoom</span><kbd>Ctrl + +</kbd></li>
+                <li><span>Alejar Zoom</span><kbd>Ctrl + -</kbd></li>
+                <li><span>Cerrar paneles o modales</span><kbd>Esc</kbd></li>
+            </ul>
+            <button id="closeShortcutsBtn" class="btn btn-primary btn-full">Entendido</button>
+        </div>
+    </div>
+
+    <script type="module" src="/src/app.js"></script>
+</body>
+</html>
